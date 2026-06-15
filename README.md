@@ -1,5 +1,7 @@
 # Email Validator
 
+[![CI](https://github.com/alwaysnitin/lab-3-1-patterns-claude-js-emailvalidator/actions/workflows/ci.yml/badge.svg)](https://github.com/alwaysnitin/lab-3-1-patterns-claude-js-emailvalidator/actions/workflows/ci.yml)
+
 A small, dependency-free Node.js module that validates email addresses. It checks
 syntactic format and flags addresses from known **disposable** email providers
 (e.g. Mailinator, 10MinuteMail), returning a structured result object.
