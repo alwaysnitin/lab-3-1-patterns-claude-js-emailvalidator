@@ -65,11 +65,16 @@ validate('not-an-email');
 | `"valid"`        | The address is well-formed.                          |
 | `"not_a_string"` | Input was not a string (e.g. `null`, number, object).|
 | `"empty"`        | Input was an empty or whitespace-only string.        |
+| `"too_long"`     | Input exceeded the maximum length of 254 characters (RFC 5321). |
 | `"invalid_format"` | Input failed the format check.                     |
 
 > **Note:** A disposable address is still considered **valid**. `isDisposable`
 > is an independent flag, not a failure condition — a syntactically correct
 > disposable address returns `{ valid: true, reason: 'valid', isDisposable: true }`.
+
+> **Whitespace:** Surrounding whitespace is trimmed before validation, so
+> `"  user@gmail.com  "` is accepted. Whitespace *within* the address is still
+> rejected as `invalid_format`.
 
 ## Disposable domain list
 

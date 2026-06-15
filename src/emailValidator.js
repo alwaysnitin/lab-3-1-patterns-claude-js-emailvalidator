@@ -1,12 +1,12 @@
 'use strict';
 
-const { isValidFormat } = require('./formatValidator');
+const { isValidFormat, MAX_EMAIL_LENGTH } = require('./formatValidator');
 const { isDisposable } = require('./disposableChecker');
 
 /**
  * @typedef {Object} ValidationResult
  * @property {boolean} valid        - true if the address is syntactically valid
- * @property {string}  reason       - "valid" | "not_a_string" | "empty" | "invalid_format"
+ * @property {string}  reason       - "valid" | "not_a_string" | "empty" | "too_long" | "invalid_format"
  * @property {boolean} isDisposable - true if the domain is a disposable provider
  */
 
@@ -26,13 +26,20 @@ function validate(email) {
     return { valid: false, reason: 'not_a_string', isDisposable: false };
   }
 
-  // Trim only for the empty-check and downstream checks. We don't mutate or
-  // return a trimmed address here since validate() returns a result, not the
-  // normalized email; surrounding whitespace makes an address invalid anyway.
+  // We trim surrounding whitespace and validate the trimmed value, so input
+  // like "  user@gmail.com  " is accepted (convenient for form-sourced data).
+  // The returned object is a result, not the normalized address, so we don't
+  // hand the trimmed string back to the caller.
   const trimmed = email.trim();
 
   if (trimmed.length === 0) {
     return { valid: false, reason: 'empty', isDisposable: false };
+  }
+
+  // Reject over-length addresses with a distinct reason (isValidFormat() also
+  // guards length, but would collapse this into the generic invalid_format).
+  if (trimmed.length > MAX_EMAIL_LENGTH) {
+    return { valid: false, reason: 'too_long', isDisposable: false };
   }
 
   if (!isValidFormat(trimmed)) {

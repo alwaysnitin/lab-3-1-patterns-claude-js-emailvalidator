@@ -1,6 +1,6 @@
 'use strict';
 
-const { isValidFormat } = require('../src/formatValidator');
+const { isValidFormat, MAX_EMAIL_LENGTH } = require('../src/formatValidator');
 
 describe('isValidFormat', () => {
   describe('valid addresses', () => {
@@ -39,6 +39,25 @@ describe('isValidFormat', () => {
 
     test.each(invalidEmails)('rejects "%s" (%s)', (email) => {
       expect(isValidFormat(email)).toBe(false);
+    });
+  });
+
+  describe('length bounds', () => {
+    test('exposes a sane MAX_EMAIL_LENGTH', () => {
+      expect(MAX_EMAIL_LENGTH).toBe(254);
+    });
+
+    test('rejects input longer than MAX_EMAIL_LENGTH', () => {
+      const tooLong = 'a'.repeat(MAX_EMAIL_LENGTH) + '@x.com';
+      expect(isValidFormat(tooLong)).toBe(false);
+    });
+
+    test('accepts an otherwise-valid address at exactly MAX_EMAIL_LENGTH', () => {
+      const suffix = '@example.com';
+      const local = 'a'.repeat(MAX_EMAIL_LENGTH - suffix.length);
+      const atLimit = `${local}${suffix}`;
+      expect(atLimit.length).toBe(MAX_EMAIL_LENGTH);
+      expect(isValidFormat(atLimit)).toBe(true);
     });
   });
 

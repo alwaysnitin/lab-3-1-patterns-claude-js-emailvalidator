@@ -1,6 +1,7 @@
 'use strict';
 
 const { isDisposable, extractDomain } = require('../src/disposableChecker');
+const disposableDomains = require('../src/data/disposable-domains.json');
 
 describe('extractDomain', () => {
   test('returns the lowercased domain after "@"', () => {
@@ -58,5 +59,34 @@ describe('isDisposable', () => {
   test('returns false when no domain can be extracted', () => {
     expect(isDisposable('no-at-symbol')).toBe(false);
     expect(isDisposable(null)).toBe(false);
+  });
+});
+
+describe('disposable-domains.json integrity', () => {
+  // Guards against careless edits to the data file that would silently weaken
+  // matching (matching lowercases input, so an uppercase/padded entry would
+  // never be hit; duplicates and blanks are pure noise).
+  test('is a non-empty array', () => {
+    expect(Array.isArray(disposableDomains)).toBe(true);
+    expect(disposableDomains.length).toBeGreaterThan(0);
+  });
+
+  test('every entry is a lowercase, trimmed, non-empty string', () => {
+    for (const entry of disposableDomains) {
+      expect(typeof entry).toBe('string');
+      expect(entry.length).toBeGreaterThan(0);
+      expect(entry).toBe(entry.toLowerCase().trim());
+    }
+  });
+
+  test('every entry looks like a domain (has a dot, no "@" or spaces)', () => {
+    for (const entry of disposableDomains) {
+      expect(entry).toContain('.');
+      expect(entry).not.toMatch(/[@\s]/);
+    }
+  });
+
+  test('contains no duplicate entries', () => {
+    expect(new Set(disposableDomains).size).toBe(disposableDomains.length);
   });
 });
