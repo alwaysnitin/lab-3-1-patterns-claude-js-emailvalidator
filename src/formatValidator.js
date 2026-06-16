@@ -19,6 +19,14 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@.]+$/;
 // before they reach the (repeated) string scans below.
 const MAX_EMAIL_LENGTH = 254;
 
+// ASCII control characters (C0 range U+0000-U+001F plus DEL U+007F). These
+// never appear in a legitimate address, but the [^\s@] classes in EMAIL_PATTERN
+// would otherwise accept them: \s covers tab/newline/CR but NOT NUL or the
+// other C0 controls. Accepting them is a real downstream hazard -- NUL
+// truncation in C-based mail/DB layers, and log/header injection. Stateless
+// (no /g flag) so it is safe to reuse across .test() calls.
+const CONTROL_CHARS = /[\x00-\x1f\x7f]/;
+
 /**
  * Returns true if the string is a syntactically valid email address.
  *
@@ -39,6 +47,19 @@ function isValidFormat(email) {
     return false;
   }
 
+  // Reject control characters and malformed UTF-16 (lone surrogates). Both slip
+  // past the [^\s@] classes below and certify input that is unsafe (injection /
+  // NUL truncation) or unstorable downstream (lone surrogates can't be encoded
+  // to UTF-8). Defensive duplicate of validate()'s checks, which report distinct
+  // reasons. isWellFormed() is the canonical lone-surrogate test (Node >= 20);
+  // guarded so this helper degrades gracefully on older runtimes.
+  if (CONTROL_CHARS.test(email)) {
+    return false;
+  }
+  if (typeof email.isWellFormed === 'function' && !email.isWellFormed()) {
+    return false;
+  }
+
   // Reject leading/trailing dots in local part or domain that the regex alone
   // would otherwise allow (e.g. ".a@b.com" or "a@b.com." has a dot adjacent
   // to "@" or string boundary). These are invalid per common practice.
@@ -54,4 +75,4 @@ function isValidFormat(email) {
   return EMAIL_PATTERN.test(email);
 }
 
-module.exports = { isValidFormat, MAX_EMAIL_LENGTH };
+module.exports = { isValidFormat, MAX_EMAIL_LENGTH, CONTROL_CHARS };

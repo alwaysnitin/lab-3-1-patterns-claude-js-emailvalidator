@@ -28,16 +28,19 @@ const { validate } = require('./'); // from the project root (uses index.js)
 const { validate } = require('./');
 
 validate('user@gmail.com');
-// → { valid: true, reason: 'valid', isDisposable: false }
+// → { valid: true, reason: 'valid', isDisposable: false, normalized: 'user@gmail.com' }
+
+validate('  user@gmail.com  '); // trimmed; normalized holds the value to persist
+// → { valid: true, reason: 'valid', isDisposable: false, normalized: 'user@gmail.com' }
 
 validate('throwaway@mailinator.com');
-// → { valid: true, reason: 'valid', isDisposable: true }
+// → { valid: true, reason: 'valid', isDisposable: true, normalized: 'throwaway@mailinator.com' }
 
 validate('temp@inbox.mailinator.com'); // subdomain match
-// → { valid: true, reason: 'valid', isDisposable: true }
+// → { valid: true, reason: 'valid', isDisposable: true, normalized: 'temp@inbox.mailinator.com' }
 
 validate('not-an-email');
-// → { valid: false, reason: 'invalid_format', isDisposable: false }
+// → { valid: false, reason: 'invalid_format', isDisposable: false, normalized: 'not-an-email' }
 ```
 
 ## API
@@ -52,9 +55,11 @@ validate('not-an-email');
 
 ```ts
 {
-  valid: boolean,        // true if the address is syntactically valid
-  reason: string,        // see reason codes below
-  isDisposable: boolean  // true if the domain is a disposable provider
+  valid: boolean,           // true if the address is syntactically valid
+  reason: string,           // see reason codes below
+  isDisposable: boolean,    // true if the domain is a disposable provider
+  normalized: string | null // the trimmed value that was validated, or null
+                            //   for non-string input. Persist this when valid.
 }
 ```
 
@@ -66,6 +71,8 @@ validate('not-an-email');
 | `"not_a_string"` | Input was not a string (e.g. `null`, number, object).|
 | `"empty"`        | Input was an empty or whitespace-only string.        |
 | `"too_long"`     | Input exceeded the maximum length of 254 characters (RFC 5321). |
+| `"control_char"` | Input contained an ASCII control character (NUL/C0/DEL) — an injection/truncation hazard. |
+| `"malformed_unicode"` | Input contained malformed UTF-16 (a lone surrogate) that cannot be encoded to UTF-8. |
 | `"invalid_format"` | Input failed the format check.                     |
 
 > **Note:** A disposable address is still considered **valid**. `isDisposable`

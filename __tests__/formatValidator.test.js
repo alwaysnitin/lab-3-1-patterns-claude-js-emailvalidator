@@ -61,6 +61,27 @@ describe('isValidFormat', () => {
     });
   });
 
+  describe('control characters and malformed Unicode', () => {
+    // These pass the [^\s@] character classes but must be rejected: control
+    // chars are an injection/truncation hazard, lone surrogates can't be
+    // encoded to UTF-8 downstream.
+    test('rejects an embedded NUL byte', () => {
+      expect(isValidFormat(`user@x${String.fromCharCode(0)}.com`)).toBe(false);
+    });
+
+    test('rejects a C0 control character', () => {
+      expect(isValidFormat(`a${String.fromCharCode(0x1f)}@x.com`)).toBe(false);
+    });
+
+    test('rejects DEL (0x7f)', () => {
+      expect(isValidFormat(`a${String.fromCharCode(0x7f)}@x.com`)).toBe(false);
+    });
+
+    test('rejects a lone surrogate', () => {
+      expect(isValidFormat(`user@${String.fromCharCode(0xd800)}x.com`)).toBe(false);
+    });
+  });
+
   describe('non-string and empty input', () => {
     // isValidFormat answers only the yes/no format question; any non-string
     // or empty value is simply "not valid" here (reason codes live in validate()).
